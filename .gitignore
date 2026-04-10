@@ -1,3 +1,6 @@
+# TUIO Bridge — user config (generated at runtime)
+tuio_bridge_config.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
