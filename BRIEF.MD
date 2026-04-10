@@ -1,4 +1,4 @@
-# TUIO Bridge — Claude Code Project Brief
+# TUIO Bridge — Project Brief
 
 **Python GUI Application**
 Version 1.0 | Author: Ant | Status: Ready for Implementation
