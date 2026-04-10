@@ -3,52 +3,112 @@ import QtQuick.Controls.Material
 import QtQuick.Controls
 
 /*
-  DoubleSpinBox — a SpinBox that works with floating-point values.
-  Internally stores value * 1000 as integers (3 decimal places of precision).
-
-  Usage:
-    DoubleSpinBox {
-        value: 1.0
-        from: 0.0
-        to: 10.0
-        stepSize: 0.1
-        onValueModified: doSomething(value)
-    }
+  DoubleSpinBox — a simple float input field with +/- buttons.
+  Properties: realValue (real), realFrom (real), realTo (real)
+  Signal:     valueModified()  — emitted when user commits a change
 */
-SpinBox {
+Item {
     id: control
 
-    property real realFrom:     0.0
-    property real realTo:       10.0
-    property real realStep:     0.1
-    property real realValue:    1.0
+    property real realValue: 1.0
+    property real realFrom:  0.0
+    property real realTo:    10.0
 
-    readonly property int _scale: 1000
+    signal valueModified()
 
-    from:     Math.round(realFrom  * _scale)
-    to:       Math.round(realTo    * _scale)
-    stepSize: Math.round(realStep  * _scale)
-    value:    Math.round(realValue * _scale)
+    implicitHeight: 28
+    implicitWidth: 100
 
-    editable: true
-    font.pixelSize: 11
-
-    validator: DoubleValidator {
-        bottom: control.realFrom
-        top:    control.realTo
-        decimals: 3
-        notation: DoubleValidator.StandardNotation
+    // Sync display when realValue is set externally (e.g. config reload)
+    onRealValueChanged: {
+        if (!field.activeFocus)
+            field.text = realValue.toFixed(3)
     }
 
-    textFromValue: function(v, locale) {
-        return (v / control._scale).toFixed(3)
-    }
+    Row {
+        anchors.fill: parent
+        spacing: 0
 
-    valueFromText: function(text, locale) {
-        return Math.round(parseFloat(text) * control._scale)
-    }
+        // Decrement button
+        Rectangle {
+            width: 22; height: parent.height
+            color: decMa.containsMouse ? Qt.rgba(1,1,1,0.10) : Qt.rgba(1,1,1,0.05)
+            radius: 3
+            Label {
+                anchors.centerIn: parent
+                text: "−"
+                font.pixelSize: 14
+                color: "#90a4ae"
+            }
+            MouseArea {
+                id: decMa
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: {
+                    const next = Math.max(control.realFrom, control.realValue - 0.1)
+                    control.realValue = Math.round(next * 1000) / 1000
+                    field.text = control.realValue.toFixed(3)
+                    control.valueModified()
+                }
+            }
+        }
 
-    onValueModified: {
-        control.realValue = control.value / control._scale
+        // Text field
+        TextField {
+            id: field
+            width: parent.width - 44
+            height: parent.height
+            text: control.realValue.toFixed(3)
+            font.pixelSize: 11
+            font.family: "monospace"
+            horizontalAlignment: Text.AlignHCenter
+            leftPadding: 4; rightPadding: 4
+
+            validator: DoubleValidator {
+                bottom: control.realFrom
+                top:    control.realTo
+                decimals: 3
+                notation: DoubleValidator.StandardNotation
+            }
+
+            background: Rectangle {
+                color: Qt.rgba(1,1,1,0.06)
+                border.color: field.activeFocus ? Material.accentColor : Qt.rgba(1,1,1,0.12)
+                border.width: field.activeFocus ? 2 : 1
+            }
+
+            onEditingFinished: {
+                const v = parseFloat(text)
+                if (!isNaN(v)) {
+                    control.realValue = Math.max(control.realFrom, Math.min(control.realTo, v))
+                    text = control.realValue.toFixed(3)
+                    control.valueModified()
+                }
+            }
+        }
+
+        // Increment button
+        Rectangle {
+            width: 22; height: parent.height
+            color: incMa.containsMouse ? Qt.rgba(1,1,1,0.10) : Qt.rgba(1,1,1,0.05)
+            radius: 3
+            Label {
+                anchors.centerIn: parent
+                text: "+"
+                font.pixelSize: 14
+                color: "#90a4ae"
+            }
+            MouseArea {
+                id: incMa
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: {
+                    const next = Math.min(control.realTo, control.realValue + 0.1)
+                    control.realValue = Math.round(next * 1000) / 1000
+                    field.text = control.realValue.toFixed(3)
+                    control.valueModified()
+                }
+            }
+        }
     }
 }
