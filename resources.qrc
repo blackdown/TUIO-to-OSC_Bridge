@@ -9,5 +9,6 @@
     <file>qml/components/TargetRow.qml</file>
     <file>qml/components/TransformGroup.qml</file>
     <file>qml/components/DoubleSpinBox.qml</file>
+    <file>qml/components/SectionHeader.qml</file>
   </qresource>
 </RCC>
