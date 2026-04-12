@@ -40,7 +40,7 @@ Item {
         }
         CheckBox {
             id: swapBox
-            text: "Swap X↔Y"
+            text: "Swap X\u2194Y"
             checked: root.targetData.swap_axes ?? false
             font.pixelSize: 11
             onToggled: Bridge.setTargetSwapAxes(root.targetIndex, checked)
@@ -50,38 +50,38 @@ Item {
 
         // --- Scale row ---
         Label { text: "Scale X"; font.pixelSize: 11; color: "#90a4ae" }
-        DoubleSpinBox {
-            id: scaleXSpin
-            realValue: root.targetData.scale_x ?? 1.0
+        FloatField {
+            id: scaleXField
+            value: root.targetData.scale_x ?? 1.0
             Layout.fillWidth: true
-            onValueModified: Bridge.setTargetScaleX(root.targetIndex, realValue)
+            onCommitted: (v) => Bridge.setTargetScaleX(root.targetIndex, v)
         }
         Label { text: "Scale Y"; font.pixelSize: 11; color: "#90a4ae" }
-        DoubleSpinBox {
-            id: scaleYSpin
-            realValue: root.targetData.scale_y ?? 1.0
+        FloatField {
+            id: scaleYField
+            value: root.targetData.scale_y ?? 1.0
             Layout.fillWidth: true
-            onValueModified: Bridge.setTargetScaleY(root.targetIndex, realValue)
+            onCommitted: (v) => Bridge.setTargetScaleY(root.targetIndex, v)
         }
 
         // --- Offset row ---
         Label { text: "Offset X"; font.pixelSize: 11; color: "#90a4ae" }
-        DoubleSpinBox {
-            id: offsetXSpin
-            realValue: root.targetData.offset_x ?? 0.0
-            realFrom: -100.0
-            realTo: 100.0
+        FloatField {
+            id: offsetXField
+            value: root.targetData.offset_x ?? 0.0
+            minValue: -100.0
+            maxValue: 100.0
             Layout.fillWidth: true
-            onValueModified: Bridge.setTargetOffsetX(root.targetIndex, realValue)
+            onCommitted: (v) => Bridge.setTargetOffsetX(root.targetIndex, v)
         }
         Label { text: "Offset Y"; font.pixelSize: 11; color: "#90a4ae" }
-        DoubleSpinBox {
-            id: offsetYSpin
-            realValue: root.targetData.offset_y ?? 0.0
-            realFrom: -100.0
-            realTo: 100.0
+        FloatField {
+            id: offsetYField
+            value: root.targetData.offset_y ?? 0.0
+            minValue: -100.0
+            maxValue: 100.0
             Layout.fillWidth: true
-            onValueModified: Bridge.setTargetOffsetY(root.targetIndex, realValue)
+            onCommitted: (v) => Bridge.setTargetOffsetY(root.targetIndex, v)
         }
     }
 
@@ -89,13 +89,58 @@ Item {
     Connections {
         target: Bridge
         function onConfigChanged() {
-            flipXBox.checked       = root.targetData.flip_x   ?? false
-            flipYBox.checked       = root.targetData.flip_y   ?? false
-            swapBox.checked        = root.targetData.swap_axes ?? false
-            scaleXSpin.realValue   = root.targetData.scale_x  ?? 1.0
-            scaleYSpin.realValue   = root.targetData.scale_y  ?? 1.0
-            offsetXSpin.realValue  = root.targetData.offset_x ?? 0.0
-            offsetYSpin.realValue  = root.targetData.offset_y ?? 0.0
+            flipXBox.checked    = root.targetData.flip_x    ?? false
+            flipYBox.checked    = root.targetData.flip_y    ?? false
+            swapBox.checked     = root.targetData.swap_axes ?? false
+            scaleXField.value   = root.targetData.scale_x   ?? 1.0
+            scaleYField.value   = root.targetData.scale_y   ?? 1.0
+            offsetXField.value  = root.targetData.offset_x  ?? 0.0
+            offsetYField.value  = root.targetData.offset_y  ?? 0.0
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Inline float input component (no external dependency)
+    // -----------------------------------------------------------------------
+    component FloatField: TextField {
+        property real value: 0.0
+        property real minValue: 0.0
+        property real maxValue: 10.0
+        signal committed(real v)
+
+        text: value.toFixed(3)
+        font.pixelSize: 11
+        font.family: "monospace"
+        horizontalAlignment: Text.AlignHCenter
+        height: 26
+
+        validator: DoubleValidator {
+            bottom: minValue
+            top: maxValue
+            decimals: 3
+            notation: DoubleValidator.StandardNotation
+        }
+
+        onEditingFinished: {
+            const v = parseFloat(text)
+            if (!isNaN(v)) {
+                const clamped = Math.max(minValue, Math.min(maxValue, v))
+                value = clamped
+                text = clamped.toFixed(3)
+                committed(clamped)
+            }
+        }
+
+        onValueChanged: {
+            if (!activeFocus)
+                text = value.toFixed(3)
+        }
+
+        background: Rectangle {
+            color: Qt.rgba(1,1,1,0.06)
+            radius: 3
+            border.color: parent.activeFocus ? Material.accentColor : Qt.rgba(1,1,1,0.12)
+            border.width: parent.activeFocus ? 2 : 1
         }
     }
 }
