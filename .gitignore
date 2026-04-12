@@ -1,3 +1,12 @@
+# TUIO Bridge — user config (generated at runtime)
+tuio_bridge_config.json
+
+# Claude Code local settings (never commit)
+.claude/
+
+# Generated Qt resource module (compiled from resources.qrc)
+resources_rc.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -30,7 +39,7 @@ MANIFEST
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
+# *.spec is intentionally NOT ignored — tuio_bridge.spec must be committed
 
 # Installer logs
 pip-log.txt
