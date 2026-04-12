@@ -1,0 +1,13 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+  <qresource prefix="/">
+    <file>qml/Main.qml</file>
+    <file>qml/ConfigPanel.qml</file>
+    <file>qml/MonitorPanel.qml</file>
+    <file>qml/LogPanel.qml</file>
+    <file>qml/components/StatusBar.qml</file>
+    <file>qml/components/TargetRow.qml</file>
+    <file>qml/components/TransformGroup.qml</file>
+    <file>qml/components/RealSpinBox.qml</file>
+  </qresource>
+</RCC>
