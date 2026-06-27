@@ -20,6 +20,7 @@ from .tuio_receiver import TUIOReceiver
 from .bridge_engine import BridgeEngine
 from .cursor_model import CursorModel
 from .log_model import LogModel
+from .serial_writer import SerialWriter
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,7 @@ class BridgeController(QObject):
     configChanged      = Signal()
     isRunningChanged   = Signal(bool)
     targetCountChanged = Signal()
+    serialPortsChanged = Signal()
 
     # Internal signals for thread-safe cross-thread callbacks
     _stateUpdatedSignal = Signal(object)       # frame dict
@@ -106,6 +108,9 @@ class BridgeController(QObject):
             on_stats_updated=self._on_stats_updated,
         )
         self._engine.configure(self._config_mgr.config)
+
+        self._serial_writer = SerialWriter()
+        self._serial_ports: list[str] = SerialWriter.list_ports()
 
         self._status: str = "Stopped"
         self._active_count: int = 0
@@ -186,6 +191,7 @@ class BridgeController(QObject):
 
         self._engine.configure(cfg)
         self._engine.start()
+        self._serial_writer.configure(cfg)
         self._refresh_timer.start()
 
         self._is_running = True
@@ -198,6 +204,7 @@ class BridgeController(QObject):
             return
         self._engine.stop()
         self._receiver.stop()
+        self._serial_writer.stop()
         self._refresh_timer.stop()
         self._cursor_model.clear()
 
@@ -320,6 +327,38 @@ class BridgeController(QObject):
         self._config_mgr.set_target(index, "offset_y", v)
         self.configChanged.emit()
 
+    # -- Serial output settings --
+
+    @Property("QVariantList", notify=serialPortsChanged)
+    def serialPorts(self) -> list:
+        return self._serial_ports
+
+    @Slot()
+    def refreshSerialPorts(self) -> None:
+        self._serial_ports = SerialWriter.list_ports()
+        self.serialPortsChanged.emit()
+
+    @Slot(bool)
+    def setSerialEnabled(self, enabled: bool) -> None:
+        self._config_mgr.set(["serial_output", "enabled"], enabled)
+        if self._is_running:
+            self._serial_writer.configure(self._config_mgr.config)
+        self.configChanged.emit()
+
+    @Slot(str)
+    def setSerialPort(self, port: str) -> None:
+        self._config_mgr.set(["serial_output", "port"], port)
+        if self._is_running:
+            self._serial_writer.configure(self._config_mgr.config)
+        self.configChanged.emit()
+
+    @Slot(int)
+    def setSerialBaud(self, baud: int) -> None:
+        self._config_mgr.set(["serial_output", "baud_rate"], baud)
+        if self._is_running:
+            self._serial_writer.configure(self._config_mgr.config)
+        self.configChanged.emit()
+
     # -----------------------------------------------------------------------
     # Cross-thread callbacks → emit internal signals
     # (Called from engine/receiver threads — must not touch Qt objects directly)
@@ -329,6 +368,7 @@ class BridgeController(QObject):
         self._stateUpdatedSignal.emit(frame)
 
     def _on_osc_sent(self, address: str, value: object) -> None:
+        self._serial_writer.send(address, value)
         self._oscSentSignal.emit(address, value)
 
     def _on_stats_updated(self, active: int, mps: float) -> None:

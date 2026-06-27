@@ -45,6 +45,11 @@ DEFAULT_CONFIG: dict[str, Any] = {
             {**DEFAULT_TARGET, "port": 7000, "enabled": True},
         ],
     },
+    "serial_output": {
+        "enabled": False,
+        "port": "",
+        "baud_rate": 115200,
+    },
 }
 
 
@@ -146,6 +151,18 @@ def _validate_config(raw: Any) -> dict:
                 _validate_target(t, i)
                 for i, t in enumerate(targets_raw[:4])  # max 4
             ]
+
+    # serial_output
+    so_raw = raw.get("serial_output", {})
+    if isinstance(so_raw, dict):
+        so = cfg["serial_output"]
+        so["enabled"]   = _coerce(so_raw.get("enabled",   so["enabled"]),   bool, so["enabled"])
+        so["port"]      = _coerce(so_raw.get("port",      so["port"]),      str,  so["port"])
+        so["baud_rate"] = _coerce(so_raw.get("baud_rate", so["baud_rate"]), int,  so["baud_rate"])
+        _valid_bauds = {1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600}
+        if so["baud_rate"] not in _valid_bauds:
+            logger.warning("Config: unrecognised baud rate %d — using 115200", so["baud_rate"])
+            so["baud_rate"] = 115200
 
     return cfg
 
